@@ -1,15 +1,15 @@
 # Afritube
 
-Afritube is a video backend that accepts uploads, converts them to HLS, and serves public playlists and video segments.
+Afritube is a backend-only video platform API for accounts, channels, video metadata, HLS uploads, discovery, and engagement.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (uses the Replit-injected port)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL`, `FRONTEND_ORIGINS`; Clerk keys are managed by Replit
 
 ## Stack
 
@@ -22,23 +22,32 @@ Afritube is a video backend that accepts uploads, converts them to HLS, and serv
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — API contract source of truth
+- `lib/db/src/schema/` — PostgreSQL/Drizzle tables
+- `artifacts/api-server/src/routes/` — Express route handlers
+- `artifacts/api-server/src/lib/video-queries.ts` — shared video discovery queries
+- `artifacts/api-server/README.md` — endpoints, auth, upload and storage notes
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Clerk owns authentication; local profiles are keyed by Clerk user IDs.
+- Public and unlisted HLS assets are served directly; private HLS assets are checked against their channel owner.
+- A view is counted once per authenticated user and video.
+- FFmpeg output is local for the MVP; persistent media storage is needed for reliable production retention.
+- Development schema changes use Drizzle push; Replit Publish applies the production database diff.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The backend supports account profiles, channels, video metadata and HLS uploads, comments, likes, channel subscriptions, unique views, category listing, search, and recent/popular discovery. The production front-end origin is `https://afri-tube.vercel.app`.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The requested scope is backend only; do not add a frontend to this project unless asked.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Uploads require an authenticated Clerk account and a channel owned by that account.
+- Keep HLS playback URLs under `/api/output`; the asset guard enforces private video visibility.
 
 ## Pointers
 

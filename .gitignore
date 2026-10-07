@@ -12,6 +12,9 @@ out-tsc
 node_modules/
 uploads/
 output/
+.env
+.env.*
+!.env.example
 
 # IDEs and editors
 /.idea

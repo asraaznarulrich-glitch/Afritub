@@ -1,0 +1,1 @@
+- [OpenAPI codegen quirks](api-codegen.md) — generated Zod/types and DOM libs can conflict when an operation combines path and query parameters.

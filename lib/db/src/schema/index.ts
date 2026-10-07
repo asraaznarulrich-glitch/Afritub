@@ -1,3 +1,10 @@
+export * from "./profiles";
+export * from "./channels";
+export * from "./videos";
+export * from "./video-likes";
+export * from "./comments";
+export * from "./channel-subscriptions";
+export * from "./video-views";
 // Export your models here. Add one export per file
 // export * from "./posts";
 //

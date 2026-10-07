@@ -1,30 +1,504 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API backend Afritube — comptes, chaînes, vidéos, interactions et découverte.
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: accounts
+  - name: channels
+  - name: videos
+  - name: engagement
+  - name: discovery
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
-      description: Returns server health status
+      summary: Vérifier l’état de l’API
       responses:
         "200":
-          description: Healthy
+          description: API disponible
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /me:
+    get:
+      operationId: getMyProfile
+      tags: [accounts]
+      summary: Obtenir ou créer le profil du compte connecté
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Profil du compte
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    patch:
+      operationId: updateMyProfile
+      tags: [accounts]
+      summary: Modifier le profil du compte connecté
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Profil modifié
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+  /me/channels:
+    get:
+      operationId: listMyChannels
+      tags: [accounts, channels]
+      summary: Lister les chaînes du compte connecté
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Chaînes du compte
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Channel"
+  /me/subscriptions:
+    get:
+      operationId: listMySubscriptions
+      tags: [accounts, engagement]
+      summary: Lister les chaînes suivies par le compte connecté
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Chaînes suivies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Channel"
+  /me/videos:
+    get:
+      operationId: listMyVideos
+      tags: [accounts, videos]
+      summary: Lister les vidéos du compte connecté
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Vidéos du compte
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoList"
+  /channels:
+    post:
+      operationId: createChannel
+      tags: [channels]
+      summary: Créer une chaîne
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChannelInput"
+      responses:
+        "201":
+          description: Chaîne créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+  /channels/by-handle/{handle}:
+    get:
+      operationId: getChannelByHandle
+      tags: [channels]
+      summary: Obtenir une chaîne par son identifiant public
+      parameters:
+        - name: handle
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chaîne trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+  /channels/{channelId}:
+    parameters:
+      - name: channelId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getChannel
+      tags: [channels]
+      summary: Obtenir une chaîne
+      responses:
+        "200":
+          description: Chaîne trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+    patch:
+      operationId: updateChannel
+      tags: [channels]
+      summary: Modifier sa chaîne
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChannelUpdate"
+      responses:
+        "200":
+          description: Chaîne modifiée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+  /channels/{channelId}/videos:
+    get:
+      operationId: listChannelVideos
+      tags: [channels, videos]
+      summary: Lister les vidéos publiques d’une chaîne
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Vidéos de la chaîne
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoList"
+  /channels/{channelId}/subscription:
+    parameters:
+      - name: channelId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getChannelSubscriptionState
+      tags: [engagement]
+      summary: Vérifier son abonnement à une chaîne
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: État de l’abonnement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResult"
+        "404":
+          description: Chaîne introuvable
+    put:
+      operationId: subscribeToChannel
+      tags: [engagement]
+      summary: S’abonner à une chaîne
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: État de l’abonnement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResult"
+    delete:
+      operationId: unsubscribeFromChannel
+      tags: [engagement]
+      summary: Se désabonner d’une chaîne
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: État de l’abonnement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResult"
+  /videos:
+    get:
+      operationId: searchVideos
+      tags: [videos, discovery]
+      summary: Rechercher ou découvrir les vidéos publiques
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [recent, popular]
+            default: recent
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: Résultats paginés
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoList"
+  /videos/{videoId}:
+    parameters:
+      - name: videoId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getVideo
+      tags: [videos]
+      summary: Obtenir une vidéo et sa playlist HLS
+      responses:
+        "200":
+          description: Vidéo trouvée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+    patch:
+      operationId: updateVideo
+      tags: [videos]
+      summary: Modifier les informations d’une vidéo
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VideoUpdate"
+      responses:
+        "200":
+          description: Vidéo modifiée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+    delete:
+      operationId: deleteVideo
+      tags: [videos]
+      summary: Supprimer une vidéo appartenant au compte connecté
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Vidéo supprimée
+  /videos/{videoId}/comments:
+    parameters:
+      - name: videoId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: listVideoComments
+      tags: [engagement]
+      summary: Lister les commentaires d’une vidéo
+      responses:
+        "200":
+          description: Commentaires
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createVideoComment
+      tags: [engagement]
+      summary: Commenter une vidéo
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Commentaire créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+  /comments/{commentId}:
+    delete:
+      operationId: deleteComment
+      tags: [engagement]
+      summary: Supprimer son commentaire ou un commentaire de sa vidéo
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Commentaire supprimé
+  /videos/{videoId}/likes:
+    parameters:
+      - name: videoId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getVideoLikeState
+      tags: [engagement]
+      summary: Obtenir le nombre de likes et son état personnel
+      responses:
+        "200":
+          description: État du like
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeResult"
+    post:
+      operationId: likeVideo
+      tags: [engagement]
+      summary: Aimer une vidéo
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: État du like
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeResult"
+    delete:
+      operationId: unlikeVideo
+      tags: [engagement]
+      summary: Retirer son like d’une vidéo
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: État du like
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeResult"
+  /videos/{videoId}/views:
+    post:
+      operationId: recordVideoView
+      tags: [engagement]
+      summary: Enregistrer une vue authentifiée unique par vidéo
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: videoId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Résultat du comptage de la vue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViewResult"
+  /upload:
+    post:
+      operationId: uploadVideo
+      tags: [videos]
+      summary: Envoyer et convertir une vidéo en HLS
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/VideoUploadForm"
+      responses:
+        "201":
+          description: Vidéo convertie et publiée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+  /categories:
+    get:
+      operationId: listVideoCategories
+      tags: [discovery]
+      summary: Lister les catégories contenant des vidéos publiques
+      responses:
+        "200":
+          description: Catégories et nombre de vidéos publiques
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Clerk session token
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +507,148 @@ components:
           type: string
       required:
         - status
+    Profile:
+      type: object
+      required: [id, displayName, bio, avatarUrl, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        displayName: { type: string }
+        bio: { type: string }
+        avatarUrl: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ProfileUpdate:
+      type: object
+      properties:
+        displayName: { type: string, maxLength: 80 }
+        bio: { type: string, maxLength: 500 }
+        avatarUrl: { type: [string, "null"], format: uri }
+    Channel:
+      type: object
+      required:
+        [id, ownerId, name, handle, description, avatarUrl, bannerUrl, createdAt, updatedAt, subscriberCount, videoCount]
+      properties:
+        id: { type: string, format: uuid }
+        ownerId: { type: string }
+        name: { type: string }
+        handle: { type: string }
+        description: { type: string }
+        avatarUrl: { type: [string, "null"], format: uri }
+        bannerUrl: { type: [string, "null"], format: uri }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        subscriberCount: { type: integer }
+        videoCount: { type: integer }
+    ChannelInput:
+      type: object
+      required: [name, handle]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        handle: { type: string, pattern: "^[a-z0-9][a-z0-9-]{2,29}$" }
+        description: { type: string, maxLength: 1000 }
+        avatarUrl: { type: [string, "null"], format: uri }
+        bannerUrl: { type: [string, "null"], format: uri }
+    ChannelUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        handle: { type: string, pattern: "^[a-z0-9][a-z0-9-]{2,29}$" }
+        description: { type: string, maxLength: 1000 }
+        avatarUrl: { type: [string, "null"], format: uri }
+        bannerUrl: { type: [string, "null"], format: uri }
+    Video:
+      type: object
+      required:
+        [id, channelId, channelName, channelHandle, title, description, category, visibility, status, thumbnailUrl, playlistUrl, durationSeconds, viewCount, likeCount, commentCount, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        channelId: { type: string, format: uuid }
+        channelName: { type: string }
+        channelHandle: { type: string }
+        title: { type: string }
+        description: { type: string }
+        category: { type: string }
+        visibility: { type: string, enum: [public, unlisted, private] }
+        status: { type: string, enum: [processing, ready, failed] }
+        thumbnailUrl: { type: [string, "null"], format: uri }
+        playlistUrl: { type: [string, "null"], format: uri }
+        durationSeconds: { type: ["integer", "null"] }
+        viewCount: { type: integer }
+        likeCount: { type: integer }
+        commentCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    VideoList:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Video" }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+    VideoUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 5000 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        visibility: { type: string, enum: [public, unlisted, private] }
+        thumbnailUrl: { type: [string, "null"], format: uri }
+    VideoUploadMetadata:
+      type: object
+      required: [channelId, title]
+      properties:
+        channelId: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 5000 }
+        category: { type: string, maxLength: 80 }
+        visibility: { type: string, enum: [public, unlisted, private] }
+    VideoUploadForm:
+      allOf:
+        - $ref: "#/components/schemas/VideoUploadMetadata"
+        - type: object
+          required: [video]
+          properties:
+            video: { type: string, format: binary }
+    Comment:
+      type: object
+      required: [id, videoId, authorId, authorDisplayName, content, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        videoId: { type: string, format: uuid }
+        authorId: { type: string }
+        authorDisplayName: { type: string }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+    CommentInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 2000 }
+    LikeResult:
+      type: object
+      required: [liked, likeCount]
+      properties:
+        liked: { type: boolean }
+        likeCount: { type: integer }
+    SubscriptionResult:
+      type: object
+      required: [subscribed, subscriberCount]
+      properties:
+        subscribed: { type: boolean }
+        subscriberCount: { type: integer }
+    ViewResult:
+      type: object
+      required: [counted, viewCount]
+      properties:
+        counted: { type: boolean }
+        viewCount: { type: integer }
+    Category:
+      type: object
+      required: [name, videoCount]
+      properties:
+        name: { type: string }
+        videoCount: { type: integer }
 
