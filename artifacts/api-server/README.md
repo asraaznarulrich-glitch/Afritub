@@ -1,4 +1,4 @@
-# Video HLS API
+# Afritube HLS API
 
 Express API for accepting a video upload, converting it to HLS with FFmpeg, and
 serving the generated playlist and MPEG-TS segments.
